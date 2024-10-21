@@ -1,0 +1,35 @@
+use InfyRestaurantDB
+
+db.Restaurant.find( {}, { _id: 0, restaurant_id: 1, name: 1, borough: 1, "address.zipcode": 1 } ).pretty()
+ 
+db.Restaurant.find( { "grades.score": { $gt: 20, $lt: 80 } } ).pretty()
+
+db.Restaurant.find( { "address.coord.0": { $lt: -75.754168 } } ).pretty()
+
+db.Restaurant.find( { cuisine: { $ne: 'American' }, "grades.grade": 'A', borough: { $ne: 'Brooklyn' } } ).sort({ cuisine: -1 }).pretty()
+
+db.Restaurant.find( { borough: { $nin: ['Staten Island', 'Queens', 'Bronx', 'Brooklyn'] } }, { _id: 0, restaurant_id: 1, name: 1, borough: 1, cuisine: 1 } ).pretty()
+
+db.Restaurant.find( { "address.coord.1": { $gt: 42, $lte: 52 } }, { _id: 0, restaurant_id: 1, name: 1, address: 1, "address.coord": 1 } ).pretty()
+
+db.Restaurant.find( { "address.street": { $exists: false } } ).pretty()
+
+db.Restaurant.find( { "grades.score": { $mod: [7, 0] } }, { _id: 0, restaurant_id: 1, name: 1, grades: 1 } ).pretty()
+
+db.Restaurant.find( { "grades.score": { $lt: 5 }, borough: { $in: ['Manhattan', 'Brooklyn'] }, cuisine: { $nin: ['American', 'Chinese'] } } ).pretty()
+
+db.Restaurant.find( { "grades.score": { $all: [2, 6] }, borough: { $in: ['Manhattan', 'Brooklyn'] }, cuisine: { $nin: ['American', 'Chinese'] } } ).pretty()
+
+db.Restaurant.find( { "grades": { $not: { $elemMatch: { score: { $lte: 5 } } } }, borough: { $in: ['Manhattan', 'Brooklyn'] } } ).pretty()
+
+db.Restaurant.aggregate([ { $unwind: "$grades" }, { $match: { "grades.grade": "A" } }, { $group: { _id: { cuisine: "$cuisine", borough: "$borough" }, count: { $sum: 1 } } } ]).pretty()
+
+db.Restaurant.aggregate([ { $unwind: "$grades" }, { $match: { "grades.grade": { $in: ["B", "C"] }, "grades.date": ISODate("2014-09-18") } }, { $project: { _id: 0, name: 1, address: 1 } } ]).pretty()
+
+db.Restaurant.aggregate([ { $unwind: "$grades" }, { $match: { "grades.grade": "A", "grades.grade": { $nin: ["B", "C"] } } }, { $group: { _id: "$_id", name: { $first: "$name" }, address: { $first: "$address" }, grades: { $push: "$grades" } } }, { $project: { _id: 0, name: 1, address: 1, grades: 1 } } ]).pretty()
+
+db.Restaurant.find( { cuisine: { $regex: /Pizza/, $options: 'i' } }, { _id: 0, name: 1, address: 1, cuisine: 1 } ).pretty()
+
+db.Restaurant.aggregate([ { $match: { cuisine: "Turkish" } }, { $unwind: "$grades" }, { $group: { _id: "$_id", name: { $first: "$name" }, averageScore: { $avg: "$grades.score" } } }, { $sort: { averageScore: -1 } }, { $limit: 1 }, { $project: { _id: 0, name: 1, averageScore: 1 } } ]).pretty()
+
+db.Restaurant.aggregate([ { $unwind: "$grades" }, { $match: { "grades.grade": "A", "grades.score": { $lte: 90 } } }, { $group: { _id: "$borough", count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $limit: 1 }, { $project: { _id: 0, borough: "$_id", count: 1 } } ]).pretty()
